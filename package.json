@@ -1,6 +1,6 @@
 {
   "name": "@qefro-ai/backend",
-  "version": "1.7.1",
+  "version": "1.7.2",
   "description": "Qefro backend framework for business tool handlers and customer authorization orchestration",
   "license": "MIT",
   "author": "Qefro",

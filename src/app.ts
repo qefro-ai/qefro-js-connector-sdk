@@ -79,6 +79,7 @@ import {
     type OrganizationCapabilities,
     type OrganizationDefinition,
 } from './organization.js';
+import { validateConversationSlots, type ConversationSlot } from './conversation.js';
 import { defaultOutboxDir, EventOutbox } from './event_outbox.js';
 
 const PENDING_TTL_MS = 15 * 60 * 1000;
@@ -105,6 +106,7 @@ export class Qefro {
     private customerProvider?: CustomerProvider;
     private marketingRegistration?: MarketingRegistration;
     private organizationCapabilities?: OrganizationCapabilities;
+    private conversationSlotsList?: ConversationSlot[];
 
     constructor(config: QefroConfig) {
         this.signingSecret = config.signingSecret;
@@ -158,6 +160,19 @@ export class Qefro {
             throw new Error('organization() may only be called once');
         }
         this.organizationCapabilities = validateOrganizationDefinition(def);
+        return this;
+    }
+
+    /**
+     * Register conversation slot metadata (ADR-006). Metadata only —
+     * advertised through `capabilities.list.conversation_slots`. Runtime
+     * harvests declared ids as opaque app vocabulary.
+     */
+    conversationSlots(slots: ConversationSlot[]): this {
+        if (this.conversationSlotsList) {
+            throw new Error('conversationSlots() may only be called once');
+        }
+        this.conversationSlotsList = validateConversationSlots(slots);
         return this;
     }
 
@@ -428,6 +443,9 @@ export class Qefro {
                               this.organizationCapabilities,
                           ),
                       }
+                    : {}),
+                ...(this.conversationSlotsList
+                    ? { conversation_slots: this.conversationSlotsList }
                     : {}),
                 protocol_version: this.protocolVersion,
                 sdk_version: SDK_VERSION,

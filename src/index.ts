@@ -158,3 +158,12 @@ export {
     isOrganizationEnabled,
     buildOrganizationContext,
 } from './organization.js';
+export type {
+    ConversationSlotKind,
+    ChipValueMode,
+    ConversationSlotIdentity,
+    ConversationSlot,
+    OpaqueReference,
+    CapabilityResult,
+} from './conversation.js';
+export { validateConversationSlots } from './conversation.js';

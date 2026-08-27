@@ -7,11 +7,12 @@ import type { BusinessEventDefinition, EmittedBusinessEvent } from './business_e
 import type { AuthenticationContextPayload, ChallengePayload } from './auth.js';
 import type { MarketingCapability } from './marketing.js';
 import type { OrganizationCapability } from './organization.js';
+import type { ConversationSlot } from './conversation.js';
 
 export type QefroRequestType = 'ping' | 'tools.list' | 'capabilities.list' | 'tool.invoke' | 'tool.resume';
 
 export const SDK_NAME = '@qefro-ai/backend';
-export const SDK_VERSION = '1.7.1';
+export const SDK_VERSION = '1.7.2';
 
 export interface QefroConfig {
     signingSecret: string;
@@ -71,6 +72,8 @@ export type ProtocolResponse =
           marketing?: MarketingCapability;
           /** Present when `app.organization(...)` was registered (ADR-005). */
           organization?: OrganizationCapability;
+          /** Present when `app.conversationSlots(...)` was registered (ADR-006). */
+          conversation_slots?: ConversationSlot[];
           protocol_version?: string;
           sdk_version?: string;
           sdk_name?: string;
