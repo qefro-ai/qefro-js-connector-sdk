@@ -14,6 +14,8 @@ export type { ListenOptions, QefroServerHandle } from './server.js';
 export type {
     ToolLookup,
     ToolDefinition,
+    ToolRouting,
+    RoutingIntent,
     RegisteredTool,
     ToolHandler,
     ToolContext,

@@ -74,6 +74,8 @@ export type ProtocolResponse =
           organization?: OrganizationCapability;
           /** Present when `app.conversationSlots(...)` was registered (ADR-006). */
           conversation_slots?: ConversationSlot[];
+          /** Present when `app.runtimeAdapters(...)` was registered. */
+          runtime_adapters?: string[];
           protocol_version?: string;
           sdk_version?: string;
           sdk_name?: string;

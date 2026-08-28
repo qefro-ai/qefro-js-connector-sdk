@@ -107,6 +107,7 @@ export class Qefro {
     private marketingRegistration?: MarketingRegistration;
     private organizationCapabilities?: OrganizationCapabilities;
     private conversationSlotsList?: ConversationSlot[];
+    private runtimeAdaptersList?: string[];
 
     constructor(config: QefroConfig) {
         this.signingSecret = config.signingSecret;
@@ -173,6 +174,21 @@ export class Qefro {
             throw new Error('conversationSlots() may only be called once');
         }
         this.conversationSlotsList = validateConversationSlots(slots);
+        return this;
+    }
+
+    /**
+     * Opt into a Runtime compatibility adapter. Metadata only — advertised
+     * through `capabilities.list.runtime_adapters`. Runtime never infers
+     * adapters from tool or field names (`product`, `order`, `quotation`).
+     */
+    runtimeAdapters(ids: string[]): this {
+        if (this.runtimeAdaptersList) {
+            throw new Error('runtimeAdapters() may only be called once');
+        }
+        this.runtimeAdaptersList = ids
+            .map((s) => String(s).trim())
+            .filter((s) => s.length > 0);
         return this;
     }
 
@@ -446,6 +462,9 @@ export class Qefro {
                     : {}),
                 ...(this.conversationSlotsList
                     ? { conversation_slots: this.conversationSlotsList }
+                    : {}),
+                ...(this.runtimeAdaptersList?.length
+                    ? { runtime_adapters: this.runtimeAdaptersList }
                     : {}),
                 protocol_version: this.protocolVersion,
                 sdk_version: SDK_VERSION,

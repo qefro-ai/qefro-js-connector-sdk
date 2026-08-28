@@ -10,6 +10,13 @@ import type { PlatformCapabilities, StorageContext } from './storage.js';
 
 export type ToolAuthMode = 'none' | 'optional' | 'required';
 
+/** Declared routing semantic — not inferred from product/order/quotation nouns. */
+export type RoutingIntent = 'lookup' | 'write' | 'destructive' | 'scheduling';
+
+export interface ToolRouting {
+    intent: RoutingIntent;
+}
+
 /** Identity attributes the Qefro runtime must resolve before tool.invoke. */
 export interface ToolLookup {
     /** Shorthand for a single required attribute, e.g. `"email"` or `"phone"`. */
@@ -43,6 +50,12 @@ export interface ToolDefinition<
      * SDK never hardcodes WhatsApp/Widget/Portal rules.
      */
     lookup?: ToolLookup;
+    /**
+     * Generic routing semantic for the Runtime fast router (`lookup` | `write` |
+     * `destructive` | `scheduling`). Stamped onto `input_schema["x-qefro"].routing`.
+     * Runtime must not infer this from business nouns in the tool name.
+     */
+    routing?: ToolRouting;
     /**
      * When `false`, Qefro will not offer this tool on customer chat channels
      * (WhatsApp / widget). Use for staff-only / org-workflow actions
@@ -165,7 +178,25 @@ export function normalizeToolDefinition(definition: ToolDefinition): ToolDefinit
         permissions: definition.permissions ?? [],
         authentication_methods: definition.authentication_methods ?? [],
         lookup: lookup.length > 0 ? { required: lookup } : undefined,
+        input_schema: stampRoutingOnSchema(definition.input_schema, definition.routing),
     };
+}
+
+/** Merge `x-qefro.routing` into the tool schema without dropping other vendor keys. */
+export function stampRoutingOnSchema(
+    schema: Record<string, unknown> | undefined,
+    routing: ToolRouting | undefined,
+): Record<string, unknown> | undefined {
+    if (!routing?.intent) {
+        return schema;
+    }
+    const base: Record<string, unknown> = { ...(schema ?? { type: 'object' }) };
+    const existing = (base['x-qefro'] as Record<string, unknown> | undefined) ?? {};
+    base['x-qefro'] = {
+        ...existing,
+        routing: { intent: routing.intent },
+    };
+    return base;
 }
 
 export function parseToolRegistration(
