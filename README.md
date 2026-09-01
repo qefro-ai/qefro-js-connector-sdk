@@ -1,10 +1,11 @@
 # @qefro-ai/backend
 
-Qefro backend framework for connecting **external** ERP / POS / CRM systems:
-Business Tool handlers and customer authorization over signed `POST /qefro`.
+Qefro backend SDK for connecting **external business systems** to Qefro
+(Focus ERP, POS, CRM): Business Tool handlers over signed `POST /qefro`.
 
-This SDK is **not** how you build a Marketplace App. Marketplace Apps are
-metadata packages executed by Qefro Runtime (`qefro app init --hosting runtime`).
+This is **not** how you build a Marketplace App. Marketplace Apps are
+metadata: `qefro app init` → validate → package → install. Qefro Runtime
+executes them. No `/qefro` server required.
 
 Organizations expose one signed webhook (typically `POST /qefro`). Qefro Runtime calls `ping`, `capabilities.list`, `tool.invoke`, and `tool.resume`. Authentication (OTP, sessions) stays in your handlers — Qefro only relays challenges.
 
