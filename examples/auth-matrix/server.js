@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { Qefro } from '@qefro-ai/backend';
+import { Qefro } from '@qefro-ai/connector';
 
 /**
  * Auth matrix reference — every auth mode and challenge type in one backend.

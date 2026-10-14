@@ -17,9 +17,9 @@ function sign(secret, body, ts = Math.floor(Date.now() / 1000)) {
     return { signature, timestamp: String(ts) };
 }
 
-describe('@qefro-ai/backend module split smoke', () => {
+describe('@qefro-ai/connector module split smoke', () => {
     it('exports version and brand constants', () => {
-        assert.equal(SDK_NAME, '@qefro-ai/backend');
+        assert.equal(SDK_NAME, '@qefro-ai/connector');
         assert.equal(SDK_VERSION, '1.8.0');
     });
 
@@ -73,7 +73,7 @@ describe('@qefro-ai/backend module split smoke', () => {
             'x-qefro-timestamp': capsSig.timestamp,
         });
         assert.equal(caps.type, 'capabilities.list');
-        assert.equal(caps.sdk_name, '@qefro-ai/backend');
+        assert.equal(caps.sdk_name, '@qefro-ai/connector');
         assert.equal(caps.tools.length, 1);
         assert.equal(caps.tools[0].name, 'echo');
         assert.equal(caps.flows.length, 1);

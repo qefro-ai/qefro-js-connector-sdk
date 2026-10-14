@@ -1,6 +1,6 @@
-# @qefro-ai/backend
+# @qefro-ai/connector
 
-Qefro backend SDK for connecting **external business systems** to Qefro
+Qefro connector SDK for connecting **external business systems** to Qefro
 (Focus ERP, POS, CRM): Business Tool handlers over signed `POST /qefro`.
 
 This is **not** how you build a Marketplace App. Marketplace Apps are
@@ -12,13 +12,13 @@ Organizations expose one signed webhook (typically `POST /qefro`). Qefro Runtime
 ## Install
 
 ```bash
-npm install @qefro-ai/backend
+npm install @qefro-ai/connector
 ```
 
 ## Quick start
 
 ```ts
-import { Qefro } from '@qefro-ai/backend';
+import { Qefro } from '@qefro-ai/connector';
 
 const app = new Qefro({
   signingSecret: process.env.QEFRO_SIGNING_SECRET!,
@@ -145,7 +145,7 @@ await ctx.person.activity('note.logged', { payload: { source: 'tool' } });
 Event triggers:
 
 ```ts
-import { onPersonCreated, PersonEvents } from '@qefro-ai/backend';
+import { onPersonCreated, PersonEvents } from '@qefro-ai/connector';
 
 app.flow({
   id: 'welcome',
@@ -159,11 +159,11 @@ Docs: [Define Business Flows](https://docs.qefro.com/docs/guides/define-business
 
 ## Examples
 
-Runnable backends (ecommerce, CRM, order-status, WhatsApp, and more) live in [`examples/`](examples/README.md):
+Runnable connectors (ecommerce, CRM, order-status, WhatsApp, and more) live in [`examples/`](examples/README.md):
 
 ```bash
-git clone https://github.com/qefro-ai/qefro-js-backend-sdk.git
-cd qefro-js-backend-sdk/examples/basic-sdk
+git clone https://github.com/qefro-ai/qefro-js-connector-sdk.git
+cd qefro-js-connector-sdk/examples/basic-sdk
 cp .env.example .env
 npm install
 npm start

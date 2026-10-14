@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { Qefro } from '@qefro-ai/backend';
+import { Qefro } from '@qefro-ai/connector';
 
 /**
  * Realtime operations example — live state that changes between calls:

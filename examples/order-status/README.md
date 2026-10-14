@@ -1,6 +1,6 @@
 # Order Status Example
 
-Local `@qefro-ai/backend` webhook for **SDK Connections**, sync, and **OTP pause/resume**.
+Local `@qefro-ai/connector` webhook for **SDK Connections**, sync, and **OTP pause/resume**.
 
 ## Identity model (generic resolver)
 

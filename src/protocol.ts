@@ -12,7 +12,7 @@ import type { WhatsAppCapability } from './whatsapp.js';
 
 export type QefroRequestType = 'ping' | 'tools.list' | 'capabilities.list' | 'tool.invoke' | 'tool.resume';
 
-export const SDK_NAME = '@qefro-ai/backend';
+export const SDK_NAME = '@qefro-ai/connector';
 export const SDK_VERSION = '1.8.0';
 
 export interface QefroConfig {

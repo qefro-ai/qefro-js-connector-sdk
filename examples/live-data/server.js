@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { Qefro } from '@qefro-ai/backend';
+import { Qefro } from '@qefro-ai/connector';
 
 /**
  * Realtime data example — tools that fetch live data from public keyless APIs

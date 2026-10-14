@@ -1,5 +1,5 @@
 /**
- * @qefro-ai/backend — public API surface.
+ * @qefro-ai/connector — public API surface.
  * Modules live under src/*.ts; this file re-exports for backward compatibility.
  */
 

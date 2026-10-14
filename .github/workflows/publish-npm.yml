@@ -38,7 +38,7 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Publish @qefro-ai/backend
+      - name: Publish @qefro-ai/connector
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |

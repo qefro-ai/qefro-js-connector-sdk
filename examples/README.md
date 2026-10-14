@@ -1,8 +1,8 @@
-# @qefro-ai/backend examples
+# @qefro-ai/connector examples
 
-Runnable backends that expose `POST /qefro` for Qefro Runtime (`ping`, `tools.list`, `tool.invoke`, `tool.resume`).
+Runnable connectors that expose `POST /qefro` for Qefro Runtime (`ping`, `tools.list`, `tool.invoke`, `tool.resume`).
 
-These examples live in this repository so they always match the published `@qefro-ai/backend` package.
+These examples live in this repository so they always match the published `@qefro-ai/connector` package.
 
 ## Run any example
 
@@ -16,7 +16,7 @@ npm start
 Each example depends on the local package via `file:../..`. For a published install, use:
 
 ```bash
-npm install @qefro-ai/backend
+npm install @qefro-ai/connector
 ```
 
 ## Smoke test

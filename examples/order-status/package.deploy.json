@@ -8,7 +8,7 @@
     "smoke": "./scripts/smoke.sh"
   },
   "dependencies": {
-    "@qefro-ai/backend": "^1.0.1",
+    "@qefro-ai/connector": "^1.0.1",
     "dotenv": "^16.4.5"
   }
 }

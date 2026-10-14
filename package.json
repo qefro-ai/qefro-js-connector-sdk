@@ -1,16 +1,16 @@
 {
-  "name": "@qefro-ai/backend",
+  "name": "@qefro-ai/connector",
   "version": "1.8.0",
-  "description": "Qefro backend framework for business tool handlers and customer authorization orchestration",
+  "description": "Qefro connector framework for business tool handlers and customer authorization orchestration",
   "license": "MIT",
   "author": "Qefro",
   "homepage": "https://docs.qefro.com/docs/guides/register-sdk-business-tools",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/qefro-ai/qefro-js-backend-sdk.git"
+    "url": "git+https://github.com/qefro-ai/qefro-js-connector-sdk.git"
   },
   "bugs": {
-    "url": "https://github.com/qefro-ai/qefro-js-backend-sdk/issues"
+    "url": "https://github.com/qefro-ai/qefro-js-connector-sdk/issues"
   },
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -45,7 +45,7 @@
     "ai",
     "chat",
     "sdk",
-    "backend",
+    "connector",
     "business-tools",
     "customer-support"
   ],

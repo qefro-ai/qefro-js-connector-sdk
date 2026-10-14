@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { Qefro } from '@qefro-ai/backend';
+import { Qefro } from '@qefro-ai/connector';
 
 const port = Number(process.env.PORT || 8091);
 const signingSecret = process.env.QEFRO_SIGNING_SECRET || 'dev-secret';
