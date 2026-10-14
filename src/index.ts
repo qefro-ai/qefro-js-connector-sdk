@@ -212,3 +212,14 @@ export {
     buildWhatsAppTools,
 } from './whatsapp.js';
 
+export type { InboxStatus, InboxRecord, ClaimResult } from './idempotency_inbox.js';
+export {
+    IdempotencyInbox,
+    defaultInboxDir,
+    PreMutationError,
+    isProductionEnv,
+    DEFAULT_CRASH_WINDOW_SECS,
+    DEFAULT_RETENTION_TTL_DAYS,
+} from './idempotency_inbox.js';
+
+

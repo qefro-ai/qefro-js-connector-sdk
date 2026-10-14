@@ -82,6 +82,12 @@ import {
 import { validateConversationSlots, type ConversationSlot } from './conversation.js';
 import { defaultOutboxDir, EventOutbox } from './event_outbox.js';
 import {
+    defaultInboxDir,
+    DEFAULT_CRASH_WINDOW_SECS,
+    IdempotencyInbox,
+    PreMutationError,
+} from './idempotency_inbox.js';
+import {
     buildWhatsAppTools,
     toWhatsAppCapability,
     validateWhatsAppDefinition,
@@ -109,6 +115,7 @@ export class Qefro {
     private readonly signingSecret: string;
     private readonly endpointPath: string;
     private readonly outbox: EventOutbox;
+    private readonly inbox: IdempotencyInbox;
     private readonly eventIngestUrl?: string;
     private flushInFlight: Promise<void> | null = null;
     private readonly middlewares: Middleware[] = [];
@@ -127,7 +134,12 @@ export class Qefro {
         this.maxTimestampSkewSeconds = config.maxTimestampSkewSeconds ?? 300;
         this.endpointPath = config.endpointPath ?? '/qefro';
         this.outbox = new EventOutbox(config.eventOutboxDir ?? defaultOutboxDir(config.signingSecret));
+        this.inbox = new IdempotencyInbox(config.idempotencyDir ?? defaultInboxDir(config.signingSecret));
         this.eventIngestUrl = config.eventIngestUrl?.trim() || undefined;
+    }
+
+    getIdempotencyInbox(): IdempotencyInbox {
+        return this.inbox;
     }
 
     use(middleware: Middleware): this {
@@ -502,6 +514,7 @@ export class Qefro {
             timeout: tool.definition.timeout,
             lookup: tool.definition.lookup,
             chat: tool.definition.chat,
+            idempotency_supported: tool.definition.idempotency_supported ?? true,
         }));
     }
 
@@ -581,6 +594,9 @@ export class Qefro {
         }
 
         const traceId = headers?.['x-qefro-trace-id']?.trim() || undefined;
+        const requestId = (req.request_id || headers?.['x-qefro-request-id'] || '').trim();
+        const idempotencyKey = (req.idempotency_key || headers?.['x-qefro-idempotency-key'] || requestId || '').trim();
+        const tenantId = req.organization_id || (headers?.['x-qefro-tenant-id'] as string | undefined);
 
         if (req.type === 'tool.resume') {
             if (!req.resume_token || !req.challenge_response) {
@@ -596,6 +612,7 @@ export class Qefro {
                 return { type: 'error', code: 'not_found', message: 'resume token not found or expired' };
             }
 
+            const resumeRequestId = requestId || `resume:${req.resume_token}`;
             return this.invokeTool(
                 pending.tool,
                 pending.parameters,
@@ -608,6 +625,9 @@ export class Qefro {
                 req.platform ?? pending.platform,
                 traceId,
                 req.settings ?? pending.settings,
+                resumeRequestId,
+                idempotencyKey || resumeRequestId,
+                tenantId,
             );
         }
 
@@ -623,6 +643,9 @@ export class Qefro {
             req.platform,
             traceId,
             req.settings,
+            requestId,
+            idempotencyKey,
+            tenantId,
         );
     }
 
@@ -638,10 +661,53 @@ export class Qefro {
         platform?: PlatformCapabilities,
         traceId?: string,
         settings?: Record<string, unknown>,
+        requestId?: string,
+        idempotencyKey?: string,
+        tenantId?: string,
     ): Promise<ProtocolResponse> {
         const registration = this.tools.get(toolName);
         if (!registration) {
             return { type: 'error', code: 'not_found', message: `Unknown tool: ${toolName}` };
+        }
+
+        const idempotencyEnabled = registration.definition.idempotency_supported === true;
+        const effectiveRequestId = (requestId || '').trim();
+
+        if (idempotencyEnabled && effectiveRequestId) {
+            try {
+                const claim = this.inbox.claim(tenantId, toolName, effectiveRequestId);
+                if (claim.status === 'cached') {
+                    const cachedVal = claim.response;
+                    if (
+                        cachedVal &&
+                        typeof cachedVal === 'object' &&
+                        'type' in cachedVal &&
+                        (cachedVal as { type: string }).type === 'result'
+                    ) {
+                        return cachedVal as ProtocolResponse;
+                    }
+                    return {
+                        type: 'result',
+                        output: cachedVal,
+                    };
+                }
+                if (claim.status === 'concurrent_execution') {
+                    return {
+                        type: 'error',
+                        code: 'CONCURRENT_INVOCATION',
+                        message: `Tool '${toolName}' with request_id '${effectiveRequestId}' is currently being executed by another worker`,
+                    };
+                }
+                if (claim.status === 'uncertain_crash') {
+                    return {
+                        type: 'error',
+                        code: 'UNCERTAIN_OUTCOME',
+                        message: `Tool '${toolName}' with request_id '${effectiveRequestId}' was started at ${claim.record.created_at} but did not complete within the crash recovery window (${DEFAULT_CRASH_WINDOW_SECS}s). Manual reconciliation required.`,
+                    };
+                }
+            } catch {
+                // proceed if inbox check fails
+            }
         }
 
         const stored = this.getStoredAuth(conversationId);
@@ -724,6 +790,8 @@ export class Qefro {
             install_settings: settings,
             platform,
             trace_id: traceId,
+            request_id: effectiveRequestId || randomUUID(),
+            idempotency_key: idempotencyKey || effectiveRequestId || undefined,
             customer,
             person,
             storage,
@@ -752,6 +820,7 @@ export class Qefro {
             },
         };
 
+        let handlerStarted = false;
         try {
             for (const hook of this.beforeHooks) {
                 await hook(ctx);
@@ -761,6 +830,7 @@ export class Qefro {
                 await ctx.customer.authorize({ method: registration.definition.default_auth_method });
             }
 
+            handlerStarted = true;
             let output = await runMiddlewares(this.middlewares, ctx, async () => registration.handler(ctx));
             for (const hook of this.afterHooks) {
                 output = await hook(ctx, output);
@@ -768,14 +838,35 @@ export class Qefro {
 
             const latest = this.getStoredAuth(conversationId);
             const events = this.mergePendingEvents(emitted);
-            return {
+            const response: ProtocolResponse = {
                 type: 'result',
                 output,
                 authentication_context: latest?.auth,
                 person_mutations: personMutations.length > 0 ? personMutations : undefined,
                 events: events.length > 0 ? events : undefined,
             };
+
+            if (idempotencyEnabled && effectiveRequestId) {
+                try {
+                    this.inbox.complete(tenantId, toolName, effectiveRequestId, response);
+                } catch {
+                    // ignore
+                }
+            }
+
+            return response;
         } catch (err) {
+            if (idempotencyEnabled && effectiveRequestId && !(err instanceof ChallengeSignal)) {
+                try {
+                    if (!handlerStarted || err instanceof PreMutationError || (err as any)?.isPreMutation) {
+                        this.inbox.fail_retryable(tenantId, toolName, effectiveRequestId);
+                    } else {
+                        this.inbox.fail_uncertain(tenantId, toolName, effectiveRequestId);
+                    }
+                } catch {
+                    // ignore
+                }
+            }
             if (err instanceof ChallengeSignal) {
                 const resumeToken = randomUUID();
                 this.pruneExpiredPending();

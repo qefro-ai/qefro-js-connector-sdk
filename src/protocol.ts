@@ -31,6 +31,11 @@ export interface QefroConfig {
      * Does not wait for CRM automation.
      */
     eventIngestUrl?: string;
+    /**
+     * Directory for the durable idempotency inbox ledger.
+     * When omitted, defaults to `{tmpdir()}/qefro-idempotency-inbox/{sha256(secret).slice(0, 8)}`.
+     */
+    idempotencyDir?: string;
 }
 
 export interface ProtocolRequest {
@@ -55,6 +60,8 @@ export interface ProtocolRequest {
      * Injected by the platform on tool.invoke for managed apps.
      */
     settings?: Record<string, unknown>;
+    /** Stable idempotency key forwarded by Qefro Core or connector-manager. */
+    idempotency_key?: string;
 }
 
 export type ProtocolResponse =

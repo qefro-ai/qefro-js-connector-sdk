@@ -62,6 +62,11 @@ export interface ToolDefinition<
      * (approve, reject, finalize). Default: `true`.
      */
     chat?: boolean;
+    /**
+     * Whether the tool connector durably deduplicates requests by idempotency key / request_id.
+     * Default: `false`.
+     */
+    idempotency_supported?: boolean;
 }
 
 export interface RegisteredTool {
@@ -75,6 +80,8 @@ export interface RegisteredTool {
     lookup?: ToolLookup;
     /** `false` = staff/org only — not offered on customer chat. */
     chat?: boolean;
+    /** Whether the tool connector durably deduplicates requests by idempotency key / request_id. */
+    idempotency_supported?: boolean;
 }
 
 /** Typed tool handler: receives typed parameters, must return the declared output. */
@@ -111,6 +118,10 @@ export interface ToolContext<TParameters = Record<string, unknown>> {
      * (stabilization Phase 1 — headers only; `/qefro` body unchanged).
      */
     trace_id?: string;
+    /** Request ID for this tool invocation. */
+    request_id?: string;
+    /** Stable idempotency key for this tool invocation. */
+    idempotency_key?: string;
     /**
      * Customer Hub identity (resolve/lookup/create/update/note/tag) plus
      * optional external `CustomerProvider` auth (`authorize`).
@@ -179,6 +190,7 @@ export function normalizeToolDefinition(definition: ToolDefinition): ToolDefinit
         authentication_methods: definition.authentication_methods ?? [],
         lookup: lookup.length > 0 ? { required: lookup } : undefined,
         input_schema: stampRoutingOnSchema(definition.input_schema, definition.routing),
+        idempotency_supported: definition.idempotency_supported ?? false,
     };
 }
 
