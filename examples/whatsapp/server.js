@@ -28,6 +28,74 @@ app.customer({
   },
 });
 
+// ---------------------------------------------------------------------------
+// WhatsApp Capability: Message Templates and Interactive Flows
+// ---------------------------------------------------------------------------
+
+app.whatsapp({
+  version: 1,
+  templates: [
+    {
+      name: 'order_update',
+      language: 'en_US',
+      category: 'UTILITY',
+      providerId: 'order_update_v1',
+      description: 'Notify customer of an update to their active order',
+      components: [
+        {
+          type: 'BODY',
+          text: 'Hello {{1}}, your order {{2}} has been updated to {{3}}.',
+          variables: ['customer_name', 'order_id', 'status'],
+        },
+      ],
+    },
+    {
+      name: 'appointment_confirmation',
+      language: 'en_US',
+      category: 'UTILITY',
+      description: 'Confirm booked appointment date and time',
+      components: [
+        {
+          type: 'BODY',
+          text: 'Your appointment is confirmed for {{1}} at {{2}}.',
+          variables: ['date', 'time'],
+        },
+      ],
+    },
+  ],
+  flows: [
+    {
+      id: 'book_viewing',
+      name: 'Property Viewing Booking',
+      providerFlowId: '1179902118548695_flow_viewing',
+      description: 'Interactive WhatsApp Flow to select property and schedule a viewing',
+      cta: 'Book Viewing',
+      mode: 'published',
+      status: 'PUBLISHED',
+      screens: [
+        { id: 'SELECT_DATE', title: 'Choose Viewing Date' },
+        { id: 'CONTACT_INFO', title: 'Confirm Details', terminal: true },
+      ],
+    },
+    {
+      id: 'customer_feedback',
+      name: 'Order Feedback Flow',
+      providerFlowId: 'flow_feedback_001',
+      description: 'Interactive ratings and comments',
+      cta: 'Rate Order',
+      mode: 'published',
+      status: 'PUBLISHED',
+      screens: [
+        { id: 'RATING_SCREEN', title: 'Rate Your Experience', terminal: true },
+      ],
+    },
+  ],
+});
+
+// ---------------------------------------------------------------------------
+// Existing Tools (retained for backward compatibility)
+// ---------------------------------------------------------------------------
+
 app.tool(
   {
     name: 'wa_template_preview',

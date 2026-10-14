@@ -4,8 +4,6 @@ set -euo pipefail
 PORT="${PORT:-8088}"
 QEFRO_SIGNING_SECRET="${QEFRO_SIGNING_SECRET:-dev-secret}"
 BASE_URL="${BASE_URL:-http://127.0.0.1:${PORT}/qefro}"
-TOOL_NAME="wa_template_preview"
-TOOL_PARAMS='{"template":"order_update"}'
 
 sign_body() {
   local ts="$1"
@@ -41,7 +39,7 @@ if [[ ! -f .env ]]; then
   cp .env.example .env
 fi
 
-node server.js >/tmp/qefro-smoke-${TOOL_NAME}.log 2>&1 &
+node server.js >/tmp/qefro-smoke-whatsapp.log 2>&1 &
 SERVER_PID=$!
 
 for _ in {1..25}; do
@@ -51,20 +49,49 @@ for _ in {1..25}; do
   sleep 0.2
 done
 
+echo "=== 1. Ping ==="
 PING_BODY='{"protocol_version":"1","request_id":"smoke-ping","type":"ping"}'
-LIST_BODY='{"protocol_version":"1","request_id":"smoke-list","type":"tools.list"}'
-INVOKE_BODY="{\"protocol_version\":\"1\",\"request_id\":\"smoke-invoke\",\"type\":\"tool.invoke\",\"conversation_id\":\"smoke-conv\",\"identity\":{\"customer_id\":\"demo-customer\",\"phone\":\"+15550001111\",\"locale\":\"en\"},\"tool\":\"${TOOL_NAME}\",\"parameters\":${TOOL_PARAMS}}"
-
 PING_RESPONSE=$(send_signed "${PING_BODY}")
-LIST_RESPONSE=$(send_signed "${LIST_BODY}")
-INVOKE_RESPONSE=$(send_signed "${INVOKE_BODY}")
-
-echo "Ping response: ${PING_RESPONSE}"
-echo "Tools response: ${LIST_RESPONSE}"
-echo "Invoke response: ${INVOKE_RESPONSE}"
-
+echo "${PING_RESPONSE}"
 echo "${PING_RESPONSE}" | grep -q '"type":"pong"'
-echo "${LIST_RESPONSE}" | grep -q '"type":"tools.list"'
-echo "${INVOKE_RESPONSE}" | grep -q '"type":"result"'
 
-echo "Smoke test passed for ${TOOL_NAME}"
+echo "=== 2. Tools List ==="
+LIST_BODY='{"protocol_version":"1","request_id":"smoke-list","type":"tools.list"}'
+LIST_RESPONSE=$(send_signed "${LIST_BODY}")
+echo "${LIST_RESPONSE}" | grep -q '"name":"whatsapp_send_template"'
+echo "${LIST_RESPONSE}" | grep -q '"name":"whatsapp_launch_flow"'
+
+echo "=== 3. Capabilities List (WhatsApp Capability) ==="
+CAPS_BODY='{"protocol_version":"1","request_id":"smoke-caps","type":"capabilities.list"}'
+CAPS_RESPONSE=$(send_signed "${CAPS_BODY}")
+echo "${CAPS_RESPONSE}" | grep -q '"whatsapp":'
+echo "${CAPS_RESPONSE}" | grep -q '"order_update"'
+echo "${CAPS_RESPONSE}" | grep -q '"book_viewing"'
+
+echo "=== 4. Invoke wa_template_preview ==="
+PREVIEW_BODY='{"protocol_version":"1","request_id":"smoke-prev","type":"tool.invoke","conversation_id":"smoke-conv","identity":{"customer_id":"demo-customer","phone":"+15550001111"},"tool":"wa_template_preview","parameters":{"template":"order_update"}}'
+PREVIEW_RESPONSE=$(send_signed "${PREVIEW_BODY}")
+echo "${PREVIEW_RESPONSE}"
+echo "${PREVIEW_RESPONSE}" | grep -q '"type":"result"'
+echo "${PREVIEW_RESPONSE}" | grep -q '"approved":true'
+
+echo "=== 5. Invoke whatsapp_send_template (missing workspace channel settings) ==="
+SEND_BODY_NOCREDS='{"protocol_version":"1","request_id":"smoke-send-nocreds","type":"tool.invoke","conversation_id":"smoke-conv","identity":{"phone":"+15550001111"},"tool":"whatsapp_send_template","parameters":{"to":"+15550001111","template":"order_update","parameters":{"customer_name":"Alice","order_id":"ORD-101","status":"shipped"}}}'
+SEND_RESP_NOCREDS=$(send_signed "${SEND_BODY_NOCREDS}")
+echo "${SEND_RESP_NOCREDS}"
+echo "${SEND_RESP_NOCREDS}" | grep -q '"code":"missing_credentials"'
+
+echo "=== 6. Invoke whatsapp_send_template (with Qefro workspace channel settings injected) ==="
+SEND_BODY_SETTINGS='{"protocol_version":"1","request_id":"smoke-send-settings","type":"tool.invoke","conversation_id":"smoke-conv","identity":{"phone":"+15550001111"},"settings":{"whatsapp":{"phone_number_id":"1179902118548695","access_token":"dev-token"}},"tool":"whatsapp_send_template","parameters":{"to":"+15550001111","template":"order_update","parameters":{"customer_name":"Alice","order_id":"ORD-101","status":"shipped"}}}'
+SEND_RESP_SETTINGS=$(send_signed "${SEND_BODY_SETTINGS}")
+echo "${SEND_RESP_SETTINGS}"
+echo "${SEND_RESP_SETTINGS}" | grep -q '"template":"order_update"'
+
+echo "=== 7. Invoke whatsapp_launch_flow (with Qefro workspace channel settings injected) ==="
+FLOW_BODY='{"protocol_version":"1","request_id":"smoke-flow","type":"tool.invoke","conversation_id":"smoke-conv","identity":{"phone":"+15550001111"},"settings":{"whatsapp":{"phone_number_id":"1179902118548695","access_token":"dev-token"}},"tool":"whatsapp_launch_flow","parameters":{"to":"+15550001111","flow_id":"book_viewing"}}'
+FLOW_RESPONSE=$(send_signed "${FLOW_BODY}")
+echo "${FLOW_RESPONSE}"
+echo "${FLOW_RESPONSE}" | grep -q '"flow_id":"book_viewing"'
+
+echo ""
+echo "All WhatsApp smoke tests passed successfully!"

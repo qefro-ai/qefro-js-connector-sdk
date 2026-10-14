@@ -81,6 +81,17 @@ import {
 } from './organization.js';
 import { validateConversationSlots, type ConversationSlot } from './conversation.js';
 import { defaultOutboxDir, EventOutbox } from './event_outbox.js';
+import {
+    buildWhatsAppTools,
+    toWhatsAppCapability,
+    validateWhatsAppDefinition,
+    validateWhatsAppFlow,
+    validateWhatsAppTemplate,
+    type WhatsAppDefinition,
+    type WhatsAppFlowDefinition,
+    type WhatsAppRegistration,
+    type WhatsAppTemplateDefinition,
+} from './whatsapp.js';
 
 const PENDING_TTL_MS = 15 * 60 * 1000;
 
@@ -108,6 +119,7 @@ export class Qefro {
     private organizationCapabilities?: OrganizationCapabilities;
     private conversationSlotsList?: ConversationSlot[];
     private runtimeAdaptersList?: string[];
+    private whatsappRegistration?: WhatsAppRegistration;
 
     constructor(config: QefroConfig) {
         this.signingSecret = config.signingSecret;
@@ -190,6 +202,95 @@ export class Qefro {
             .map((s) => String(s).trim())
             .filter((s) => s.length > 0);
         return this;
+    }
+
+    /**
+     * Register WhatsApp message templates and flows.
+     * Advertised through `capabilities.list.whatsapp` and registers typed
+     * execution tools: `whatsapp_send_template`, `whatsapp_launch_flow`,
+     * `whatsapp_get_template_status`, `whatsapp_get_flow_status`.
+     */
+    whatsapp(def: WhatsAppDefinition): this {
+        const validated = validateWhatsAppDefinition(def);
+        if (this.whatsappRegistration) {
+            for (const t of validated.templates) {
+                if (this.whatsappRegistration.templates.some((ex) => ex.name === t.name)) {
+                    throw new Error(`duplicate whatsapp template name "${t.name}"`);
+                }
+                this.whatsappRegistration.templates.push(t);
+            }
+            for (const f of validated.flows) {
+                if (this.whatsappRegistration.flows.some((ex) => ex.id === f.id)) {
+                    throw new Error(`duplicate whatsapp flow id "${f.id}"`);
+                }
+                this.whatsappRegistration.flows.push(f);
+            }
+            if (validated.provider) {
+                this.whatsappRegistration.provider = {
+                    ...this.whatsappRegistration.provider,
+                    ...validated.provider,
+                };
+            }
+        } else {
+            this.whatsappRegistration = validated;
+            this.registerWhatsAppTools();
+        }
+        return this;
+    }
+
+    /**
+     * Register a single WhatsApp message template definition.
+     */
+    whatsappTemplate(template: WhatsAppTemplateDefinition): this {
+        const validated = validateWhatsAppTemplate(template);
+        if (!this.whatsappRegistration) {
+            this.whatsappRegistration = {
+                version: 1,
+                templates: [validated],
+                flows: [],
+            };
+            this.registerWhatsAppTools();
+        } else {
+            if (this.whatsappRegistration.templates.some((t) => t.name === validated.name)) {
+                throw new Error(`duplicate whatsapp template name "${validated.name}"`);
+            }
+            this.whatsappRegistration.templates.push(validated);
+        }
+        return this;
+    }
+
+    /**
+     * Register a single WhatsApp Flow definition.
+     */
+    whatsappFlow(flow: WhatsAppFlowDefinition): this {
+        const validated = validateWhatsAppFlow(flow);
+        if (!this.whatsappRegistration) {
+            this.whatsappRegistration = {
+                version: 1,
+                templates: [],
+                flows: [validated],
+            };
+            this.registerWhatsAppTools();
+        } else {
+            if (this.whatsappRegistration.flows.some((f) => f.id === validated.id)) {
+                throw new Error(`duplicate whatsapp flow id "${validated.id}"`);
+            }
+            this.whatsappRegistration.flows.push(validated);
+        }
+        return this;
+    }
+
+    private registerWhatsAppTools(): void {
+        if (!this.whatsappRegistration) return;
+        const tools = buildWhatsAppTools(this.whatsappRegistration);
+        for (const t of tools) {
+            if (!this.tools.has(t.definition.name)) {
+                this.tools.set(t.definition.name, {
+                    definition: t.definition,
+                    handler: t.handler,
+                });
+            }
+        }
     }
 
     tool<TInput = Record<string, unknown>, TOutput = unknown>(
@@ -465,6 +566,9 @@ export class Qefro {
                     : {}),
                 ...(this.runtimeAdaptersList?.length
                     ? { runtime_adapters: this.runtimeAdaptersList }
+                    : {}),
+                ...(this.whatsappRegistration
+                    ? { whatsapp: toWhatsAppCapability(this.whatsappRegistration) }
                     : {}),
                 protocol_version: this.protocolVersion,
                 sdk_version: SDK_VERSION,

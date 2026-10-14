@@ -8,11 +8,12 @@ import type { AuthenticationContextPayload, ChallengePayload } from './auth.js';
 import type { MarketingCapability } from './marketing.js';
 import type { OrganizationCapability } from './organization.js';
 import type { ConversationSlot } from './conversation.js';
+import type { WhatsAppCapability } from './whatsapp.js';
 
 export type QefroRequestType = 'ping' | 'tools.list' | 'capabilities.list' | 'tool.invoke' | 'tool.resume';
 
 export const SDK_NAME = '@qefro-ai/backend';
-export const SDK_VERSION = '1.7.2';
+export const SDK_VERSION = '1.8.0';
 
 export interface QefroConfig {
     signingSecret: string;
@@ -76,6 +77,8 @@ export type ProtocolResponse =
           conversation_slots?: ConversationSlot[];
           /** Present when `app.runtimeAdapters(...)` was registered. */
           runtime_adapters?: string[];
+          /** Present when `app.whatsapp(...)` was registered. */
+          whatsapp?: WhatsAppCapability;
           protocol_version?: string;
           sdk_version?: string;
           sdk_name?: string;

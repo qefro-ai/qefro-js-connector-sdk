@@ -10,6 +10,7 @@ export type { QefroConfig } from './protocol.js';
 export { SDK_NAME, SDK_VERSION } from './protocol.js';
 
 export type { ListenOptions, QefroServerHandle } from './server.js';
+export { signBody, verifySignature } from './transport.js';
 
 export type {
     ToolLookup,
@@ -169,3 +170,45 @@ export type {
     CapabilityResult,
 } from './conversation.js';
 export { validateConversationSlots } from './conversation.js';
+
+export type {
+    WhatsAppDeliveryStatus,
+    WhatsAppTemplateStatus,
+    WhatsAppFlowStatus,
+    WhatsAppFlowMode,
+    WhatsAppFlowAction,
+    WhatsAppTemplateComponent,
+    WhatsAppTemplateDefinition,
+    WhatsAppFlowScreen,
+    WhatsAppFlowDefinition,
+    WhatsAppProviderConfig,
+    WhatsAppDefinition,
+    WhatsAppRegistration,
+    WhatsAppCapability,
+    ResolvedWhatsAppCredentials,
+} from './whatsapp.js';
+export {
+    WHATSAPP_SEND_TEMPLATE_TOOL,
+    WHATSAPP_LAUNCH_FLOW_TOOL,
+    WHATSAPP_GET_TEMPLATE_STATUS_TOOL,
+    WHATSAPP_GET_FLOW_STATUS_TOOL,
+    WHATSAPP_PERMISSIONS,
+    SEND_TEMPLATE_INPUT_SCHEMA,
+    LAUNCH_FLOW_INPUT_SCHEMA,
+    GET_TEMPLATE_STATUS_INPUT_SCHEMA,
+    GET_FLOW_STATUS_INPUT_SCHEMA,
+    validateWhatsAppTemplate,
+    validateWhatsAppFlow,
+    validateWhatsAppDefinition,
+    toWhatsAppCapability,
+    resolveWhatsAppCredentials,
+    maskPhoneNumber,
+    cleanRecipientPhone,
+    isRetryableMetaError,
+    executeSendTemplate,
+    executeLaunchFlow,
+    executeGetTemplateStatus,
+    executeGetFlowStatus,
+    buildWhatsAppTools,
+} from './whatsapp.js';
+
