@@ -44,7 +44,7 @@ app.whatsapp({
       components: [
         {
           type: 'BODY',
-          text: 'Hello {{1}}, your order {{2}} has been updated to {{3}}.',
+          text: 'Hello {{1}}, here is an update on your purchase. Your order {{2}} is currently {{3}}. Thank you for shopping with us!',
           variables: ['customer_name', 'order_id', 'status'],
         },
       ],
@@ -57,7 +57,7 @@ app.whatsapp({
       components: [
         {
           type: 'BODY',
-          text: 'Your appointment is confirmed for {{1}} at {{2}}.',
+          text: 'Hello, your appointment has been successfully scheduled for {{1}} at {{2}}. Please reach out if you need to reschedule.',
           variables: ['date', 'time'],
         },
       ],
