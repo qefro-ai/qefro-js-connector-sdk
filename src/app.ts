@@ -514,7 +514,7 @@ export class Qefro {
             timeout: tool.definition.timeout,
             lookup: tool.definition.lookup,
             chat: tool.definition.chat,
-            idempotency_supported: tool.definition.idempotency_supported ?? true,
+            idempotency_supported: tool.definition.idempotency_supported ?? false,
         }));
     }
 
@@ -705,8 +705,14 @@ export class Qefro {
                         message: `Tool '${toolName}' with request_id '${effectiveRequestId}' was started at ${claim.record.created_at} but did not complete within the crash recovery window (${DEFAULT_CRASH_WINDOW_SECS}s). Manual reconciliation required.`,
                     };
                 }
-            } catch {
-                // proceed if inbox check fails
+            } catch (err) {
+                return {
+                    type: 'error',
+                    code: 'IDEMPOTENCY_STORE_UNAVAILABLE',
+                    message: `Idempotency store unavailable for tool '${toolName}': ${
+                        err instanceof Error ? err.message : String(err)
+                    }`,
+                };
             }
         }
 

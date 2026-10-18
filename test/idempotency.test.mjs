@@ -1,7 +1,7 @@
 import { createHmac, randomUUID } from 'crypto';
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { rmSync } from 'node:fs';
+import { rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import {
@@ -256,5 +256,56 @@ describe('Qefro App Tool Idempotency Integration', () => {
         assert.equal(executions, 1, 'handler must NOT be called a second time after uncertain failure');
 
         rmSync(testDir, { recursive: true, force: true });
+    });
+
+    it('does not advertise idempotency for WhatsApp tools that never declared it', async () => {
+        const secret = 'test-secret';
+        const app = new Qefro({ signingSecret: secret });
+        app.whatsappFlow({ id: 'order_status' });
+
+        const capBody = JSON.stringify({
+            protocol_version: '1',
+            request_id: 'req-wa-cap',
+            type: 'capabilities.list',
+        });
+        const capSig = sign(secret, capBody);
+        const capResp = await app.handleRaw(capBody, {
+            'x-qefro-signature': capSig.signature,
+            'x-qefro-timestamp': capSig.timestamp,
+        });
+        const send = capResp.tools.find((t) => t.name === 'whatsapp_send_template');
+        assert.ok(send, 'whatsapp_send_template is advertised');
+        assert.equal(
+            send.idempotency_supported,
+            false,
+            'undeclared idempotency must not be advertised as supported',
+        );
+    });
+
+    it('refuses the invocation when the idempotency store cannot be claimed', async () => {
+        const secret = 'test-secret';
+        const testDir = join(tmpdir(), `qefro-store-${randomUUID()}`);
+        const app = new Qefro({
+            signingSecret: secret,
+            idempotencyDir: testDir,
+        });
+        app.tool('charge_customer', { idempotency_supported: true }, async () => ({ ok: true }));
+        rmSync(testDir, { recursive: true, force: true });
+        writeFileSync(testDir, 'not a directory');
+        const body = JSON.stringify({
+            protocol_version: '1',
+            request_id: 'req-store-down',
+            type: 'tool.invoke',
+            tool: 'charge_customer',
+            parameters: {},
+        });
+        const sig = sign(secret, body);
+        const resp = await app.handleRaw(body, {
+            'x-qefro-signature': sig.signature,
+            'x-qefro-timestamp': sig.timestamp,
+        });
+        assert.equal(resp.type, 'error');
+        assert.equal(resp.code, 'IDEMPOTENCY_STORE_UNAVAILABLE');
+        rmSync(testDir, { force: true });
     });
 });
