@@ -1052,6 +1052,8 @@ export class Qefro {
                 'x-qefro-protocol': headerValue(req, 'x-qefro-protocol'),
                 'x-qefro-protocol-version': headerValue(req, 'x-qefro-protocol-version'),
                 'x-qefro-trace-id': headerValue(req, 'x-qefro-trace-id'),
+                'x-qefro-request-id': headerValue(req, 'x-qefro-request-id'),
+                'x-qefro-idempotency-key': headerValue(req, 'x-qefro-idempotency-key'),
             };
 
             const protocolHeader = headers['x-qefro-protocol'] ?? headers['x-qefro-protocol-version'];
